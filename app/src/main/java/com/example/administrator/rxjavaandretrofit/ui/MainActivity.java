@@ -9,7 +9,12 @@ import android.widget.TextView;
 
 import com.example.administrator.rxjavaandretrofit.R;
 import com.example.administrator.rxjavaandretrofit.api.HttpMethods;
+import com.example.administrator.rxjavaandretrofit.jbean.FeedBackEntity;
 import com.example.administrator.rxjavaandretrofit.jbean.MovieEntity;
+import com.example.administrator.rxjavaandretrofit.jbean.UserInfo;
+import com.google.gson.Gson;
+
+import org.json.JSONException;
 
 import java.util.List;
 
@@ -24,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     @Bind(R.id.result_TV)
     TextView mResultTV;
     private Subscriber<MovieEntity> mSubscriber;
+    private Subscriber<FeedBackEntity> mSubscriber2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,13 +45,46 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 getMovie();
+//                editFeedBack();
+//                upLoadUserMessage();
+            }
+
+        });
+    }
+
+
+
+
+
+    //进行网络请求
+    private void getMovie() {
+
+        HttpMethods.getInstance(this).getTopMovie(0, 5, new HttpMethods.Func() {
+            @Override
+            public void onJsonString(String response) throws JSONException {
+                Gson gson=new Gson();
+                MovieEntity movieEntity = gson.fromJson(response, MovieEntity.class);
+                int count = movieEntity.getCount();
+                String title = movieEntity.getTitle();
+                int total = movieEntity.getTotal();
+                List<MovieEntity.SubjectsBean> subjects = movieEntity.getSubjects();
+                mResultTV.setText("title=" + title + "  count=" + count + " total=" + "   subjects=" + subjects.toString());
+
+
+//            }
+            }
+
+            @Override
+            public void onError() {
+
             }
         });
     }
 
-    //进行网络请求
-    private void getMovie() {
-        mSubscriber = new Subscriber<MovieEntity>() {
+
+    //反馈信息
+    private void editFeedBack() {
+        mSubscriber2 = new Subscriber<FeedBackEntity>() {
             @Override
             public void onCompleted() {
                 Log.e(TAG, "onCompleted: ");
@@ -54,21 +93,55 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onError(Throwable e) {
                 Log.e(TAG, "onError: ", e);
-                
+
                 mResultTV.setText(e.getMessage());
             }
 
             @Override
-            public void onNext(MovieEntity movieEntity) {
+            public void onNext(FeedBackEntity feedBackEntity) {
                 Log.e(TAG, "onNext: ");
-
-                int count = movieEntity.getCount();
-                String title = movieEntity.getTitle();
-                int total = movieEntity.getTotal();
-                List<MovieEntity.SubjectsBean> subjects = movieEntity.getSubjects();
-                mResultTV.setText("title=" + title + "  count=" + count + " total=" + "   subjects=" + subjects.toString());
+                boolean upload_result = feedBackEntity.isUpload_result();
+                mResultTV.setText(upload_result + "");
             }
         };
-        HttpMethods.getInstance().getTopMovie(mSubscriber, 0, 10);
+
+        HttpMethods.getInstance(this).editFeedBack(mSubscriber2, "13783539372", "henhao1");
+    }
+
+
+
+    //下载用户信息
+    private void upLoadUserMessage() {
+        mSubscriber2 = new Subscriber<FeedBackEntity>() {
+            @Override
+            public void onCompleted() {
+                Log.e(TAG, "onCompleted: ");
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                Log.e(TAG, "onError: ", e);
+
+                mResultTV.setText(e.getMessage());
+            }
+
+            @Override
+            public void onNext(FeedBackEntity feedBackEntity) {
+                Log.e(TAG, "onNext: ");
+                boolean upload_result = feedBackEntity.isUpload_result();
+                mResultTV.setText(upload_result + "");
+            }
+        };
+
+        UserInfo info=new UserInfo();
+        info.setUser_name("13783539372");
+        info.setImage_url("");
+        info.setUser_other_name("gaoqiong");
+        info.setUser_sex(0);
+        info.setUser_age(0);
+        info.setUser_eye_condition(0);
+
+        HttpMethods.getInstance(this).upLoadUserMessage(mSubscriber2,info);
+
     }
 }
